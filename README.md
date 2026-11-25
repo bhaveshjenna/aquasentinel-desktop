@@ -3,6 +3,17 @@
 **Safe Predictive Control and Federated Forecasting for Aquaculture Water Quality Simulation** — a water-quality
 monitoring and action-suggestion system for fish ponds, with a native desktop operator console.
 
+### Project & Team Attribution
+
+- **Institution:** Department of Computer Science and Engineering, Birla Institute of Technology (BIT), Mesra, Ranchi
+- **Project Guide:** Dr. Akriti Nigam
+- **Team Members:**
+  - Bhavesh Jenna (`BTECH/10796/23`)
+  - Mihika Lakra (`BTECH/10580/23`)
+  - Rishi Talluri (`BTECH/10829/23`)
+
+---
+
 - A physics-lite **pond digital twin** simulates oxygen, temperature, pH, ammonia, nitrite and
   turbidity, and responds to actions.
 - A **perception stack** reads it: an LSTM forecaster, an HDBSCAN novelty flag, a LightGBM risk
@@ -86,16 +97,36 @@ All benchmark metrics in `RESULTS.md` are computed directly from `outputs/` at b
 
 ## Quick start
 
-```bash
-pip install -r requirements.txt -r requirements-desktop.txt
+### Environment & Dependencies
 
+Install all core ML, native GUI (`PySide6`, `pyqtgraph`), reporting (`python-docx`, `python-pptx`), and test (`pytest-qt`) dependencies in one command:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Pipelines & Pre-training
+
+```bash
 python scripts/collect_data.py          # ONE-TIME, online: downloads the pond dataset (Kaggle token)
 python scripts/pretrain_federated.py    # federated forecaster + anomaly + risk models   (~1 min)
 python scripts/pretrain_world_model.py --rounds 12 --episodes 30   # world model   (~1 min)
 python -m src.eval.run_eval             # full evaluation grid + ablations   (~20 min)
 python scripts/build_report.py          # RESULTS.md
+```
 
-python -m desktop                       # the desktop operator console (or run_desktop.bat)
+### Launching the Frontends
+
+Two one-click Windows launchers are provided:
+- **`run_desktop.bat`** — launches the primary native PySide6 + pyqtgraph desktop operator console (`python -u -m desktop`).
+- **`run_dashboard.bat`** — launches the Streamlit web dashboard backup at `http://localhost:8501` (useful on Windows machines where AMD/integrated display drivers block Qt window compositing).
+
+Both `.bat` launchers automatically discover the active Python virtual environment (local, parent, or `%VIRTUAL_ENV%`) and set `NUMBA_DISABLE_JIT=1` and `KMP_DUPLICATE_LIB_OK=TRUE` to avoid LLVM/OpenMP hangs in OneDrive-synced directories.
+
+Alternatively, launch either directly from terminal:
+```bash
+python -u -m desktop                    # native Qt desktop console
+streamlit run dashboard/app.py          # Streamlit web dashboard
 ```
 
 Rebuilding the documentation reports:
@@ -111,6 +142,14 @@ without `models/` (it falls back to the rule-based risk bands and says so).
 **Desktop console:** `Space` play/pause · `S` step one decision · `R` reset. Views: Live dashboard,
 Counterfactual, Agent, Scorecard. A Streamlit version of the same dashboard is kept in
 `dashboard/` (`streamlit run dashboard/app.py`).
+
+### Verification & Testing
+
+Run the full automated test suite (137 tests covering digital twin physics, guardrail enforcement, sensor streams, ML perception models, federated learning, and both GUI frontends):
+
+```bash
+pytest tests/ -p no:cacheprovider -v
+```
 
 ---
 
@@ -148,6 +187,7 @@ Counterfactual, Agent, Scorecard. A Streamlit version of the same dashboard is k
 
 One plan every 15 simulated minutes; the safety layer runs on **every** 5-minute reading.
 
+- **Cadence & Impulse Actuation:** The policy re-plans on a 15-minute cadence. Between decision points, continuous actuators (`aerator`, `exchange`, `feed`) remain held under 5-minute `safety_only()` supervision. Discrete chemical impulse treatments (`lime`, `salt`) execute once on the initial decision tick and are immediately reset to `none` on intermediate ticks so single-shot doses never repeat across the cadence window.
 - **Planners** (`configs/agent.yaml`): `reactive` (transparent rules over readings and forecast)
   and `predictive` (default: scores 14 curated actions through the world model; cost = time at
   risk + 3 × time critical + operating cost + volatility + lost-growth penalty).
@@ -178,21 +218,23 @@ each one produces the stress its name claims. `sensor_fault` corrupts the readin
 ## Layout
 
 ```
-configs/     data, twin, scenarios, sensors, models, federated, agent
+configs/           data, twin, scenarios, sensors, models, federated, agent
 src/
-  common/    runtime (seeds, config), schema (State, Observation, Action, Decision)
-  data/      sources/kaggle_pond (usgs, ukea kept but unused), collect, harmonize, registry
-  twin/      pond, dynamics, scenarios, calibrate, risk_bands
-  sensors/   stream
-  perception/forecaster, world_model, regimes, risk, explain
-  federated/ client, simulate
-  agent/     policy, guardrails, actuators, loop
-  eval/      baselines, metrics, run_eval
-desktop/     the PySide6 operator console (main UI)
-dashboard/   the Streamlit version
-scripts/     data, training, evaluation and document builders
-report/      generated documents and figures
-tests/       131 tests (twin, sensors, data/QC, perception, federation, guardrails, agent, desktop)
+  common/          runtime (seeds, config), schema (State, Observation, Action, Decision)
+  data/            sources/kaggle_pond (usgs, ukea kept but unused), collect, harmonize, registry
+  twin/            pond, dynamics, scenarios, calibrate, risk_bands
+  sensors/         stream
+  perception/      forecaster, world_model, regimes, risk, explain
+  federated/       client, simulate
+  agent/           policy, guardrails, actuators, loop
+  eval/            baselines, metrics, run_eval
+desktop/           the PySide6 operator console (main UI)
+dashboard/         the Streamlit version
+scripts/           data, training, evaluation and document builders
+report/            generated documents, architecture diagrams, and figures
+tests/             137 tests across 11 modules (twin, sensors, data/QC, perception, federation, guardrails, agent, desktop, dashboard)
+run_desktop.bat    one-click Windows launcher for native Qt desktop console
+run_dashboard.bat  one-click Windows launcher for Streamlit web dashboard
 ```
 
 ## Conventions
