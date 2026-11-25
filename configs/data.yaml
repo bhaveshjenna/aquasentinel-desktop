@@ -31,7 +31,7 @@ http:
   retries: 4
   backoff_s: 2.0             # exponential: backoff_s * 2**attempt
   polite_delay_s: 0.7        # between requests, per source (fair-use)
-  user_agent: "AquaSentinel/0.1 (student project; contact via repo)"
+  user_agent: "AquaSentinel/0.1 (autonomous aquaculture digital twin; contact via repo)"
 
 cache:
   raw_dir: data_cache/raw
@@ -44,8 +44,7 @@ sources:
 
   kaggle_pond:
     # Real aquaculture pond IoT data: catfish aquaponics ponds on local farms in Nsukka, Enugu
-    # State, Nigeria (Udanor et al., University of Nigeria Nsukka; Data in Brief 2022,
-    # doi:10.1016/j.dib.2022.108400). Jun-Oct 2021, one reading every ~20 s.
+    # State, Nigeria (Udanor et al., Data in Brief 2022, doi:10.1016/j.dib.2022.108400). Jun-Oct 2021, one reading every ~20 s.
     # Needs a Kaggle token (~/.kaggle) for the first download only; cached after that.
     enabled: true
     label: "Kaggle - Sensor Based Aquaponics Fish Pond Datasets"

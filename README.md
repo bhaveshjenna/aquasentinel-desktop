@@ -76,14 +76,11 @@ is read from a file. The figures below are a hand-copied summary — if they dis
 
 | File | What it is |
 |---|---|
-| `report/AquaSentinel-Report.pdf` | Full project report (generated) |
-| `report/AquaSentinel-Code-Walkthrough.pdf` | Where every key step lives in the code, with the code and an explanation of each important line |
-| `report/review2/AquaSentinel-Review2-Draft-Report.docx` / `.pdf` | BCSE497J draft report in the university template |
-| `report/review2/AquaSentinel-Review2-Presentation.pptx` / `.pdf` | Review presentation in the university template |
-| `RESULTS.md` | Every result table, generated from `outputs/` |
+| `report/AquaSentinel-Report.pdf` | Comprehensive system architecture & research report |
+| `report/AquaSentinel-Code-Walkthrough.pdf` | Architectural walkthrough detailing key algorithmic components |
+| `RESULTS.md` | Benchmark evaluation tables and ablation results, generated from `outputs/` |
 
-All of them read their numbers from `outputs/` at build time (`scripts/results_source.py` for the
-review documents), so re-running the pipeline and the build scripts updates every document.
+All benchmark metrics in `RESULTS.md` are computed directly from `outputs/` at build time, so re-running the evaluation grid updates the documentation automatically.
 
 ---
 
@@ -101,13 +98,11 @@ python scripts/build_report.py          # RESULTS.md
 python -m desktop                       # the desktop operator console (or run_desktop.bat)
 ```
 
-Rebuilding the documents:
+Rebuilding the documentation reports:
 
 ```bash
 python scripts/make_figures.py && python scripts/make_report_pdf.py   # project report PDF
-python scripts/make_review2_figures.py
-python scripts/make_review2_report.py && python scripts/make_review2_ppt.py
-python scripts/make_code_walkthrough_pdf.py
+python scripts/make_code_walkthrough_pdf.py                          # code walkthrough PDF
 ```
 
 PDF printing needs Node and Chrome or Edge (`scripts/html_to_pdf.mjs`). The desktop app runs
