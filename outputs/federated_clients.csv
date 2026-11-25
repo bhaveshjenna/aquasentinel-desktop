@@ -1,0 +1,8 @@
+client_id,source,region,channels,n_train_windows,n_val_windows,data_fraction,rows
+kaggle_pond_pond01,kaggle_pond,NG-Nsukka,do|ph|tan|temp_c|turbidity,73,162,0.08,11153
+kaggle_pond_pond02,kaggle_pond,NG-Nsukka,do|ph|tan|temp_c|turbidity,1334,235,1.0,12883
+kaggle_pond_pond03,kaggle_pond,NG-Nsukka,do|ph|tan|temp_c|turbidity,70,156,0.08,11101
+kaggle_pond_pond04,kaggle_pond,NG-Nsukka,do|ph|tan|temp_c|turbidity,780,137,1.0,7584
+kaggle_pond_pond06,kaggle_pond,NG-Nsukka,do|ph|tan|temp_c|turbidity,1020,180,1.0,11150
+kaggle_pond_pond07,kaggle_pond,NG-Nsukka,do|ph|tan|temp_c|turbidity,1416,249,1.0,18751
+kaggle_pond_pond09,kaggle_pond,NG-Nsukka,do|ph|tan|temp_c|turbidity,1022,180,1.0,11203

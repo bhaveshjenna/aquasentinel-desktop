@@ -1,0 +1,127 @@
+# Scenario = initial-state overrides + a schedule of perturbations + a seed.
+# Each is independently runnable and reproducible: `python -m src.eval.run_eval --scenario <id>`
+#
+# Perturbation kinds (see src/twin/scenarios.py):
+#   temp_offset      value C added to the temperature forcing
+#   cloud            multiplies incident light
+#   feed_pulse       kg of extra feed dumped at start_h
+#   algae_seed       multiplies algae standing crop once at start_h
+#   algae_growth     multiplies the algal growth rate while active
+#   alkalinity_set   forces alkalinity to value at start_h (buffer crash)
+#   aerator_fault    aerator actuator delivers 0 regardless of command while active
+#   inflow_temp      changes replacement-water temperature
+#   sensor_fault     handled by SensorStream, not the twin (channel dropout / spike)
+
+defaults:
+  duration_h: 48.0
+  start_hour_of_day: 12.0
+  seed: 20240101
+
+scenarios:
+
+  healthy_baseline:
+    label: "Healthy baseline"
+    description: "Well-run pond. The agent should almost never need to intervene."
+    seed: 1001
+    duration_h: 48.0
+    perturbations: []
+
+  night_do_crash:
+    label: "Nighttime DO crash"
+    description: "Heavy standing crop plus warm night: DO sags through critical before dawn."
+    seed: 1002
+    duration_h: 36.0
+    start_hour_of_day: 14.0
+    initial:
+      algae: 4.2
+      biomass: 3.6
+      bod_pool: 14.0
+      do: 7.5
+    perturbations:
+      - {kind: cloud, start_h: 0.0, end_h: 48.0, value: 0.40}
+      # A warm night, but deliberately kept inside the temperature window: the story of this
+      # scenario is oxygen, and a permanent temperature warning would swamp the metric.
+      - {kind: temp_offset, start_h: 0.0, end_h: 48.0, value: 1.2}
+
+  overfeeding_ammonia:
+    label: "Overfeeding -> ammonia spike"
+    description: "Large feed pulse; TAN and un-ionised NH3 climb over the following hours."
+    seed: 1003
+    duration_h: 48.0
+    start_hour_of_day: 6.0
+    initial:
+      tan: 0.8
+      alkalinity: 75.0
+      ph: 8.2
+    perturbations:
+      - {kind: feed_pulse, start_h: 2.0, value: 40.0}
+      - {kind: feed_pulse, start_h: 14.0, value: 30.0}
+
+  algal_bloom:
+    label: "Algal bloom then die-off"
+    description: "Bloom drives a large daytime pH surge, then crashes and takes DO down at night."
+    seed: 1004
+    duration_h: 72.0
+    start_hour_of_day: 8.0
+    initial:
+      algae: 2.4
+      biomass: 2.8
+      tan: 1.1
+      turbidity: 55.0
+    perturbations:
+      - {kind: algae_growth, start_h: 0.0, end_h: 26.0, value: 2.4}
+      - {kind: feed_pulse, start_h: 3.0, value: 30.0}
+      - {kind: algae_death, start_h: 30.0, end_h: 52.0, value: 14.0}
+      - {kind: cloud, start_h: 30.0, end_h: 72.0, value: 0.35}
+
+  heatwave:
+    label: "Heatwave"
+    description: "Sustained +5 C: lower DO saturation, higher respiration, NH3 shifts toxic."
+    seed: 1005
+    duration_h: 60.0
+    start_hour_of_day: 6.0
+    initial:
+      biomass: 3.4
+      algae: 2.6
+      bod_pool: 6.0
+    perturbations:
+      - {kind: temp_offset, start_h: 4.0, end_h: 60.0, value: 5.0}
+      - {kind: inflow_temp, start_h: 0.0, end_h: 60.0, value: 30.0}
+
+  aerator_failure:
+    label: "Aerator failure mid-run"
+    description: "Aeration is commanded but not delivered; the agent must compensate."
+    seed: 1006
+    duration_h: 36.0
+    start_hour_of_day: 15.0
+    initial:
+      algae: 3.8
+      biomass: 3.6
+      bod_pool: 10.0
+    perturbations:
+      - {kind: cloud, start_h: 0.0, end_h: 48.0, value: 0.45}
+      - {kind: aerator_fault, start_h: 8.0, end_h: 26.0, value: 1.0}
+
+  ph_swing:
+    label: "Alkalinity crash -> pH swing"
+    description: "Buffer collapses; the diurnal pH swing turns volatile. Tests lime dosing caps."
+    seed: 1007
+    duration_h: 60.0
+    start_hour_of_day: 4.0
+    initial:
+      algae: 3.0
+      alkalinity: 90.0
+    perturbations:
+      - {kind: alkalinity_set, start_h: 6.0, value: 14.0}
+      - {kind: algae_growth, start_h: 6.0, end_h: 40.0, value: 1.8}
+
+  sensor_fault:
+    label: "Sensor fault"
+    description: "DO probe drops out and spikes. Tests anomaly detection, not the twin."
+    seed: 1008
+    duration_h: 36.0
+    start_hour_of_day: 10.0
+    perturbations:
+      - {kind: sensor_fault, start_h: 10.0, end_h: 16.0, channel: do, mode: dropout, value: 0.75}
+      - {kind: sensor_fault, start_h: 22.0, end_h: 26.0, channel: do, mode: spike, value: 4.0}
+      - {kind: sensor_fault, start_h: 28.0, end_h: 31.0, channel: ph, mode: stuck, value: 0.0}

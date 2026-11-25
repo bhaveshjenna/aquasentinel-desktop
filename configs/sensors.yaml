@@ -1,0 +1,27 @@
+# Sensor simulator: how the "live" stream differs from twin ground truth.
+sample_every_minutes: 5     # must be a multiple of twin dt_minutes
+
+noise_std:                  # additive Gaussian, channel units
+  do: 0.15
+  temp_c: 0.08
+  ph: 0.03
+  tan: 0.02
+  no2: 0.006
+  turbidity: 1.2
+
+bias:                       # fixed per-run calibration offset, drawn once from N(0, this)
+  do: 0.05
+  temp_c: 0.05
+  ph: 0.02
+  tan: 0.01
+  no2: 0.002
+  turbidity: 0.5
+
+dropout_prob: 0.01          # per channel per sample -> NaN
+quantization:               # probe resolution
+  do: 0.01
+  temp_c: 0.01
+  ph: 0.01
+  tan: 0.001
+  no2: 0.001
+  turbidity: 0.1

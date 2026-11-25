@@ -1,0 +1,6 @@
+controller,runs_n,unsafe_applied_total,unsafe_applied_max,guardrail_events_total,scenarios
+do_nothing,80,6169,227,0,8
+oracle,80,0,0,1105,8
+predictive,80,0,0,2065,8
+reactive,80,0,0,1906,8
+static_threshold,80,0,0,1728,8

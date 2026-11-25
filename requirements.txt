@@ -1,0 +1,33 @@
+# AquaSentinel - Python 3.11, CPU only. No GPU is required or used.
+numpy>=1.26
+pandas>=2.0
+pyarrow>=14.0
+pyyaml>=6.0
+scipy>=1.11
+requests>=2.31
+
+torch>=2.2            # CPU build is sufficient: pip install torch --index-url https://download.pytorch.org/whl/cpu
+scikit-learn>=1.4
+hdbscan>=0.8.38
+lightgbm>=4.0
+shap>=0.44
+
+streamlit>=1.30
+plotly>=5.18
+matplotlib>=3.8       # scripts/make_figures.py renders the report figures to SVG/PNG
+
+# Desktop GUI (native Qt)
+PySide6>=6.5
+pyqtgraph>=0.13
+
+# Reporting & presentation generation (scripts/make_review*.py)
+python-docx>=1.1.0
+python-pptx>=0.6.21
+
+pytest>=8.0
+pytest-qt>=4.4
+
+# Optional extras
+# flwr>=1.8            # alternative federated backend to the in-process FedAvg loop
+# dp-accounting>=0.4   # a real RDP epsilon for --dp; without it, epsilon is reported UNACCOUNTED
+# kaggle>=1.6          # optional aquaculture pond IoT datasets (needs a token)

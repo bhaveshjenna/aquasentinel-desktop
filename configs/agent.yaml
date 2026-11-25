@@ -1,0 +1,92 @@
+# Agent: action space, guardrails, planner, cost weights.
+planner: predictive          # reactive | predictive
+decide_every_minutes: 15     # agent ticks are coarser than twin steps
+
+action_space:
+  aerator: [0.0, 0.5, 1.0]
+  exchange: [none, small, large]
+  feed: [normal, reduced, skip]
+  lime: [none, dose]
+  salt: [none, dose]
+  # The planner enumerates a curated candidate set (see policy.py CANDIDATES) rather than the
+  # full cross product, to stay CPU-cheap and explainable.
+
+cost_weights:
+  risk: 1.0                  # weight on predicted time-in-risk over the horizon
+  critical: 3.0              # extra weight on predicted time in CRITICAL
+  intervention: 0.06         # per-action operating cost (see action_costs)
+  stability: 0.20            # penalty on predicted channel volatility
+  feed_loss: 0.35            # penalty for skipping/reducing feed (lost growth)
+
+action_costs:                # relative operating cost per agent tick
+  aerator_per_unit: 1.0
+  exchange_small: 1.5
+  exchange_large: 4.0
+  lime_dose: 2.5
+  salt_dose: 3.0
+  feed_reduced_penalty: 0.4       # fraction of the full feed-skip penalty
+
+guardrails:
+  # HARD constraints. Always on, for every planner.
+  enabled: true
+  emergency_do_threshold: 2.5      # mg/L: below this the aerator is forced to max
+  emergency_forecast_do: 2.0       # forecast min DO below this also triggers the override
+  max_lime_doses_per_day: 2
+  max_salt_doses_per_day: 1
+  min_interval_minutes:
+    lime: 360
+    salt: 720
+    exchange: 120
+  max_exchange_hours_per_day: 6.0
+  require_better_inflow_for_large_exchange: true
+  inflow_quality:                  # what the operator knows about replacement water
+    do: 7.5
+    temp_c: 26.0
+    ph: 7.6
+    tan: 0.05
+    no2: 0.01
+    turbidity: 12.0
+  no_feed_when:                    # feeding is blocked in these conditions
+    do_below: 3.5
+    nh3_above: 0.05
+    forecast_do_below: 3.0
+  aerator_rate_limit_per_tick: 1.0 # max change in aerator level per agent tick
+  # The guardrails only ever see the NOISY probe reading, but safety is judged against the
+  # pond's true state. These margins are the guardrails' allowance for that gap - roughly
+  # 3 sigma of the sensor noise in configs/sensors.yaml - so a threshold fires slightly early
+  # rather than slightly late. Widen them if you widen the sensor noise.
+  sensor_margin:
+    do: 0.5
+    nh3: 0.004
+    ph: 0.10
+  block_lime_above_ph: 8.6         # never lime an already-alkaline pond
+  block_large_exchange_above_temp_delta: 4.0
+
+reactive:
+  do_warn: 4.5
+  do_act: 4.0
+  nh3_warn: 0.02
+  no2_warn: 0.5
+  ph_low: 6.6
+  ph_high: 8.9
+
+predictive:
+  rollout_steps: 24            # H twin steps rolled forward per candidate
+  # ON, and it costs us. The LSTM residual correction is measured against its own ablation on
+  # every evaluation run and it makes control WORSE - see `full` vs `no_lstm_correction` in
+  # outputs/ablations.csv. A network trained on temperate rivers and residual-corrected onto a
+  # warm-water pond injects more bias than it removes, even damped by half.
+  # It ships enabled anyway, as a deliberate choice: the learned forecaster is the component
+  # the federated half of this project exists to produce, and keeping it on the actuator path
+  # is what makes the end-to-end system a learned controller rather than a twin rolled forward
+  # by classical control. The price is quantified rather than hidden - flip to false for the
+  # better-scoring controller, and the ablation table reports both either way.
+  use_forecaster: true
+  hold_action_steps: 12        # candidate action is held this many steps, then no_op
+  # Replace the hand-written internal pond model with the action-conditioned LSTM
+  # (models/world_model_federated.pt). When true the planner's rollouts - and so its choice of
+  # action - are produced by the learned model, with the physics model kept only as the
+  # warm-up fallback for the first `window` ticks of a run, before a full observation window
+  # exists. Falls back automatically, and reports how often, if the model file is absent.
+  world_model: true
+  world_model_source: federated     # federated | central | local

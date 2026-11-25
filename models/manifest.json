@@ -1,0 +1,73 @@
+{
+  "trained_at": "2026-10-25T16:15:47",
+  "n_clients": 7,
+  "train_sites": [
+    "kaggle_pond_pond01",
+    "kaggle_pond_pond02",
+    "kaggle_pond_pond03",
+    "kaggle_pond_pond06",
+    "kaggle_pond_pond07"
+  ],
+  "holdout_sites": [
+    "kaggle_pond_pond04",
+    "kaggle_pond_pond09"
+  ],
+  "data_poor_sites": [
+    "kaggle_pond_pond03",
+    "kaggle_pond_pond01"
+  ],
+  "federated": {
+    "enabled": true,
+    "rounds": 12,
+    "local_epochs": 2,
+    "client_fraction": 1.0,
+    "weighted_by_samples": true
+  },
+  "differential_privacy": {
+    "enabled": false
+  },
+  "real_data": {
+    "n_sites": 7,
+    "n_rows": 83825,
+    "sources": {
+      "kaggle_pond": 7
+    },
+    "regions": 1,
+    "date_range": [
+      "2021-06-18T11:00:00+00:00",
+      "2021-12-30T19:30:00+00:00"
+    ],
+    "mean_channels": 5.0
+  },
+  "outputs": {
+    "comparison": "outputs/federated_comparison.csv",
+    "data_poor": "outputs/federated_data_poor.csv",
+    "clients": "outputs/federated_clients.csv",
+    "rounds": "outputs/federated_rounds.csv",
+    "summary": "outputs/federated_summary.csv"
+  },
+  "regimes": {
+    "n_clusters": 6,
+    "noise_fraction": 0.3443325476751661,
+    "dbcv": 0.04014617724464425,
+    "silhouette": 0.14901848603677706,
+    "n_points": 4667
+  },
+  "regime_names": {
+    "0": "supersaturated recovering strongly diurnal turbid",
+    "1": "well-oxygenated declining",
+    "2": "supersaturated recovering turbid",
+    "3": "supersaturated recovering strongly diurnal",
+    "4": "oxygen-depleted steady turbid",
+    "5": "well-oxygenated steady strongly diurnal"
+  },
+  "risk": {
+    "accuracy": 0.9840823970037453,
+    "balanced_accuracy": 0.983445014741951,
+    "macro_f1": 0.9833297901410707,
+    "critical_recall": 0.9832635983263598,
+    "critical_precision": 0.9791666666666666,
+    "n": 2136,
+    "held_out_seed": 4
+  }
+}

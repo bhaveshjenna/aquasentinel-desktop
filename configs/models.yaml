@@ -1,0 +1,77 @@
+# Perception stack hyperparameters. CPU-only, deterministic.
+window: 36                 # W: input steps (36 x 5 min = 3 h)
+horizon: 24                # H: forecast steps (24 x 5 min = 2 h)
+
+forecaster:
+  hidden_size: 64
+  num_layers: 1
+  dropout: 0.0
+  lr: 0.003
+  batch_size: 128
+  epochs: 12
+  grad_clip: 1.0
+  channels: [do, temp_c, ph, tan, no2, turbidity]
+  # The network predicts each channel's CHANGE from the last observed value, divided by these
+  # fixed constants. Fixed - not fitted - for two reasons: fitting them would leak a client's
+  # data statistics across the federated boundary, and absolute levels do not transfer from a
+  # temperate river to a warm-water pond while diurnal SHAPE does. Roughly one typical
+  # two-hour excursion per channel.
+  # A training window is only usable if these channels have a real reading at the window's
+  # last step - that is the origin the deltas are measured from. Everything else may be
+  # absent: real sites differ in which probes they carry, and the mask tells the model so.
+  anchor_channels: [do, temp_c]
+  delta_scale:
+    do: 2.0
+    temp_c: 1.5
+    ph: 0.3
+    tan: 0.3
+    no2: 0.1
+    turbidity: 20.0
+
+world_model:
+  # Action-conditioned dynamics: (observed window, candidate action) -> predicted trajectory.
+  # This is the learned replacement for the hand-written pond model inside the MPC rollout, so
+  # the trajectories the planner scores - and therefore the action it applies - come from a
+  # network rather than from a differential equation.
+  #
+  # Trained on TWIN rollouts, because the 42 real river sites contain no actuator and therefore
+  # no (action -> response) pairs at all. The encoder is warm-started from the federated
+  # forecaster so the representation the decision is computed on is still the one FedAvg
+  # produced across the real sites; only the action head is twin-learned. Federation for this
+  # model is across simulated ponds with differing physical parameters (see federated.yaml).
+  hidden_size: 64
+  num_layers: 1
+  dropout: 0.0
+  lr: 0.003
+  batch_size: 256
+  epochs: 14
+  grad_clip: 1.0
+  warm_start_from_federated: true   # copy the real-data federated LSTM into the encoder
+  clip_to_physical_bounds: true     # a net will predict negative DO outside its training set
+
+regimes:
+  # Deliberately a SUBSET of the forecaster's channels. Only 12 of the real monitoring sites
+  # carry an ammonium probe and none carry nitrite, so including tan/no2 here would make every
+  # real-site feature row incomplete and the clusters would be fitted on twin data alone. These
+  # four are reported by essentially every site, which is what lets real and simulated windows
+  # share one regime space.
+  channels: [do, temp_c, ph, turbidity]
+  # Raw channels are converted to these before clustering, so that a regime means the same
+  # thing on a 12 C river and a 28 C pond. See the docstring in src/perception/regimes.py.
+  derived: [do_sat, temp_anom, ph_anom, turb_log]
+  min_cluster_size: 40
+  min_samples: 10
+  metric: euclidean
+  cluster_selection_method: eom
+  features: [mean, std, slope, last]     # summary stats per channel over the window
+
+risk:
+  # LightGBM over current channels + forecast summaries. Target is a RULE-DERIVED risk class
+  # computed from the twin's bands over the forecast horizon - not learned chemistry.
+  num_leaves: 31
+  max_depth: 6
+  learning_rate: 0.06
+  n_estimators: 220
+  min_child_samples: 25
+  classes: [safe, warning, critical]
+  score_weights: {safe: 0.0, warning: 0.5, critical: 1.0}

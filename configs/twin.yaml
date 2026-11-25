@@ -1,0 +1,171 @@
+# AquaSentinel pond digital twin.
+#
+# EVERY number here is a CALIBRATABLE DEFAULT, not a measured fact.
+# The `calibration:` block at the end records what was fitted to real data and what was not.
+# Calibrate against FAO pond-aquaculture guidance, Boyd 'Water Quality in Ponds
+# for Aquaculture', and APHA Standard Methods before treating output as physical.
+
+dt_minutes: 5
+process_noise: true
+pond:
+  volume_m3: 1500.0
+  depth_m: 1.5
+  salinity_ppt: 0.5
+initial:
+  do: 6.5
+  temp_c: 28.0
+  ph: 7.8
+  tan: 0.45
+  no2: 0.08
+  turbidity: 25.0
+  algae: 1.0
+  biomass: 1.6
+  alkalinity: 90.0
+  bod_pool: 2.0
+  feed_pool: 0.0
+temperature:
+  mean_c: 28.0
+  amplitude_c: 2.2
+  peak_hour: 15.5
+  inflow_c: 26.0
+  relax_per_h: 0.35
+light:
+  sunrise_h: 6.0
+  sunset_h: 18.5
+  cloud_factor: 1.0
+oxygen:
+  k_reaeration_per_h: 0.07
+  k_aerator_per_h: 0.85
+  p_max_per_h: 1.35
+  r20_per_h: 0.038
+  theta_resp: 1.07
+  algae_respiration_weight: 0.55
+  k_bod_per_h: 0.06
+  o2_per_n_nitrified: 4.57
+  min_do: 0.05
+ammonia:
+  feed_protein_n_frac: 0.032
+  feed_release_per_h: 0.3
+  feed_bod_per_kg: 0.12
+  k_nitrification_per_h: 0.055
+  k_nitrite_ox_per_h: 0.075
+  theta_nitrif: 1.08
+  k_do_half_sat: 1.5
+  k_algae_uptake_per_h: 0.03
+  inflow_tan: 0.05
+  inflow_no2: 0.01
+  alkalinity_per_n: 7.14
+ph:
+  equilibrium: 7.6
+  relax_per_h: 0.1
+  photosynthesis_gain: 0.075
+  respiration_gain: 0.22
+  alkalinity_ref: 90.0
+  max_buffer_gain: 3.0
+  max_drive_per_h: 0.35
+  alkalinity_decay_per_h: 0.0008
+  min_alkalinity: 8.0
+algae:
+  growth_per_h: 0.075
+  carrying_capacity: 6.0
+  n_half_sat: 0.25
+  death_per_h: 0.02
+  crowding_death_per_h: 0.03
+  death_to_bod: 0.55
+turbidity:
+  algae_gain: 18.0
+  base_ntu: 6.0
+  settle_per_h: 0.12
+  inflow_ntu: 12.0
+actions:
+  exchange_small_frac_per_h: 0.04
+  exchange_large_frac_per_h: 0.12
+  exchange_duration_h: 1.0
+  lime_dose_kg: 25.0
+  lime_alkalinity_per_kg: 0.55
+  lime_release_per_h: 0.6
+  salt_dose_kg: 150.0
+  salt_chloride_per_kg: 0.4
+  chloride_decay_per_h: 0.01
+  feed_normal_kg_per_day: 24.0
+  feed_reduced_frac: 0.4
+  feed_hours:
+  - 8.0
+  - 16.0
+noise:
+  do: 0.1
+  temp_c: 0.05
+  ph: 0.012
+  tan: 0.006
+  no2: 0.002
+  turbidity: 0.5
+  ou_theta_per_h: 1.5
+risk_bands:
+  do:
+    critical_below: 2.0
+    warning_below: 4.0
+    healthy:
+    - 5.0
+    - 12.0
+    supersaturation_above: 15.0
+  ph:
+    critical_below: 5.5
+    critical_above: 9.5
+    warning_below: 6.5
+    warning_above: 9.0
+  nh3:
+    warning_above: 0.02
+    critical_above: 0.05
+  no2:
+    warning_above: 0.5
+    critical_above: 1.5
+  temp_c:
+    healthy:
+    - 26.0
+    - 32.0
+    critical_below: 18.0
+    critical_above: 35.0
+calibration:
+  calibrated_at: null
+  n_real_sites: 0
+  adopt_mean_temperature: false
+  adopt_diurnal: false
+  status: UNCALIBRATED - hand-set warm-water pond defaults (FAO / Boyd).
+  note: 'The values here were previously fitted to 42 US/UK river sites; that river
+    data was removed and these fields were reset to their pre-calibration defaults.
+    A fit to the 7 real Nsukka ponds was run and deliberately NOT applied: it gave
+    OU noise of 4.23 mg/L/sqrt(h) for DO and 5.56 for TAN and a baseline turbidity
+    of 93 NTU - magnitudes set by low-cost probe faults (spikes, a turbidity sensor
+    pinned at 100), not by pond physics. Applying them would make the twin random-walk.'
+  pond_fit_not_applied:
+    noise.do: 4.2278
+    noise.temp_c: 0.1973
+    noise.ph: 0.2011
+    noise.tan: 5.5623
+    noise.turbidity: 6.1404
+    ph.equilibrium: 7.3066
+    turbidity.base_ntu: 93.3647
+    diurnal_temp_amplitude_c: 0.424
+    n_ponds: 7
+  reset_from_river_fit:
+    noise.do:
+      river_value: 0.16273
+      reset_to: 0.1
+    noise.temp_c:
+      river_value: 0.13835
+      reset_to: 0.05
+    noise.ph:
+      river_value: 0.07906
+      reset_to: 0.012
+    noise.tan:
+      river_value: 0.04864
+      reset_to: 0.006
+    noise.turbidity:
+      river_value: 8.74887
+      reset_to: 0.5
+    ph.equilibrium:
+      river_value: 7.6
+      reset_to: 7.6
+    turbidity.base_ntu:
+      river_value: 4.225
+      reset_to: 6.0

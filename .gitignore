@@ -1,0 +1,38 @@
+# Data cache (~102MB raw IoT telemetry datasets)
+data_cache/
+
+# Byte-compiled / optimized / AST cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Operating system artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Transient HTML report builds
+report/*.html
+report/AquaSentinel-Report.html
+
+# Local logs & checkpoints
+*.log

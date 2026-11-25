@@ -1,0 +1,92 @@
+# Data acquisition. ONE-TIME step; everything downstream reads data_cache/.
+#
+# The only source is real aquaculture pond IoT data from ONE region: catfish aquaponics ponds
+# on local farms in Nsukka, Enugu State, Nigeria. Each pond that passes QC becomes one
+# independent federated client (Section 9). The earlier 42 US/UK river sites were removed from
+# this copy of the project; the river version is kept in a separate folder.
+#
+# HONESTY: these are real fish ponds, but low-cost IoT probes. The raw files contain
+# disconnected-probe codes (-127 C), pH below 0 and ammonia at 1e11; the QC ranges below drop
+# those, and roughly half of each pond's timeline is sensor outage. See src/data/sources/kaggle_pond.py.
+
+window:
+  start: "2021-06-18"
+  end: "2021-10-31"          # the pond record; informational - the pond files are not windowed
+  cadence_minutes: 15        # common resample cadence for every source
+
+targets:
+  total_sites: 12            # the dataset has 11 pond files
+  min_channels: 3            # a site must report at least this many of `required_any`
+  required_any: [do, temp_c, ph, turbidity, conductivity, tan]
+  must_have: [do]            # DO is the channel the whole project turns on
+  min_rows: 2000             # after harmonisation; below this the site is dropped
+  # Per-site fraction of NaN cells allowed after resampling. 0.65 for the pond data: every pond
+  # logger is offline for 37-55 % of its timeline (power / Wi-Fi), so 0.58 - the value used for
+  # the earlier river data - dropped ponds 1, 6 and 7 at 59-62 % while keeping others at 55-57 %.
+  # Ponds 8 (87 %) and 10-12 (almost no readable timestamps) stay out.
+  max_missing_frac: 0.65
+
+http:
+  timeout_s: 90
+  retries: 4
+  backoff_s: 2.0             # exponential: backoff_s * 2**attempt
+  polite_delay_s: 0.7        # between requests, per source (fair-use)
+  user_agent: "AquaSentinel/0.1 (student project; contact via repo)"
+
+cache:
+  raw_dir: data_cache/raw
+  site_dir: data_cache/sites
+  manifest: data_cache/manifest.csv
+  site_index: data_cache/site_index
+  overwrite: false           # idempotent: never re-download a cached site
+
+sources:
+
+  kaggle_pond:
+    # Real aquaculture pond IoT data: catfish aquaponics ponds on local farms in Nsukka, Enugu
+    # State, Nigeria (Udanor et al., University of Nigeria Nsukka; Data in Brief 2022,
+    # doi:10.1016/j.dib.2022.108400). Jun-Oct 2021, one reading every ~20 s.
+    # Needs a Kaggle token (~/.kaggle) for the first download only; cached after that.
+    enabled: true
+    label: "Kaggle - Sensor Based Aquaponics Fish Pond Datasets"
+    license: "CC BY 4.0 - ogbuokiriblessing/sensor-based-aquaponics-fish-pond-datasets (Kaggle)"
+    datasets:
+      - slug: ogbuokiriblessing/sensor-based-aquaponics-fish-pond-datasets
+        name: "Aquaponics fish pond"
+        region: "NG-Nsukka"
+        split_files: true        # IoTPondN.csv -> site pondNN: one pond = one client
+        prefix: pond
+    # The files disagree on where the timestamp lives; the first column present is used.
+    time_column: [created_at, "Unnamed: 0"]
+    assume_utc_offset: "+01:00"  # "CET" in the files; the ISO rows confirm +01:00 (WAT)
+    parameters: {}
+    # Column names differ in every file ("Temperature (C)", "temperature(C)", ...), so they are
+    # matched by normalised substring. The units in the headers say g/ml; the values are mg/L.
+    # NOT mapped: nitrate (raw 0-4095 ADC counts, not a concentration), and fish
+    # population/length/weight (not water quality).
+    column_contains:
+      temperature: temp_c
+      turbidity: turbidity
+      dissolvedoxygen: do
+      ph: ph
+      ammonia: tan
+    use_labels: false            # NEVER consume a dataset's own quality labels. Setting this
+                                 # true raises: those labels are usually threshold rules over
+                                 # the same columns, so training on them would be circular.
+
+# Physically impossible values -> dropped in QC (harmonize.py).
+qc:
+  ranges:
+    do: [0.0, 25.0]
+    temp_c: [-2.0, 45.0]
+    ph: [3.0, 12.0]
+    tan: [0.0, 40.0]
+    no2: [0.0, 20.0]
+    no3: [0.0, 100.0]
+    turbidity: [0.0, 4000.0]
+    conductivity: [1.0, 60000.0]
+    chlorophyll: [0.0, 500.0]
+    bga: [0.0, 500.0]
+  flatline_steps: 48           # >= this many identical consecutive values -> flagged & masked
+  detection_limit_zero: [do, turbidity]   # exact 0.0 in these channels is a censored reading
+  max_gap_fill_steps: 4        # forward-fill gaps up to 1 h; longer gaps stay NaN

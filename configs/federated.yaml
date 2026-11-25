@@ -1,0 +1,59 @@
+# Federated pretraining. One real fish pond = one independent client.
+#
+# The premise the whole study rests on: each pond trains its own model on its own data, and
+# federation is the ONLY thing that couples them. A client never reads another client's raw
+# arrays - only weights cross the boundary. Three regimes run over the identical client set so
+# any difference is a property of the data and the coupling, never of the code path.
+#
+# Non-IID is not simulated here. It is inherited: the clients are 7 real catfish ponds in
+# Nsukka, Nigeria, with different stocking, fish sizes, probe faults and outage patterns. One
+# region, so the heterogeneity is pond-to-pond rather than climate-to-climate.
+
+seed: 7
+
+clients:
+  source: manifest              # data_cache/manifest.csv (written by scripts/collect_data.py)
+  min_channels: 3
+  max_clients: 12
+  min_windows: 200              # a client with fewer training windows than this is skipped
+  window_stride: 6              # subsample windows per client to keep CPU cost sane
+
+split:
+  # Leave-some-sites-out: held-out sites are never trained on by ANY regime, so the comparison
+  # is about generalisation to a new pond, not about memorising the ones we have.
+  # 7 ponds: 2 held out, 5 train. Two held-out ponds so the comparison does not rest on one.
+  holdout_fraction: 0.25
+  holdout_min: 2
+  val_fraction: 0.15            # tail of each training client's series, for per-client eval
+  stratify_by: source           # one source here, so this is a plain seeded pick
+
+data_poor:
+  # The honest federated claim is about the pond that cannot train alone. These clients keep
+  # only a slice of their history; everything else about them is unchanged.
+  n_clients: 2                  # 2 of the 5 training ponds; 3 stay data-rich
+  data_fraction: 0.08
+  select: fewest_windows        # fewest_windows | random
+
+regimes:
+  independent_local:
+    enabled: true
+    epochs: 24                  # matched total local work: rounds * local_epochs
+  federated:
+    enabled: true
+    rounds: 12
+    local_epochs: 2
+    client_fraction: 1.0
+    weighted_by_samples: true   # FedAvg proper: weight each client by its sample count
+  central:
+    enabled: true
+    epochs: 24
+    note: "Upper reference only - pooling raw data violates the privacy premise."
+
+differential_privacy:
+  # Optional stretch (Section 9). Per-client update clipping plus Gaussian noise on the
+  # aggregate. The epsilon reported is an RDP-accountant value when dp-accounting is
+  # installed, and is reported as UNACCOUNTED otherwise - never guessed.
+  enabled: false
+  clip_norm: 1.0
+  noise_multiplier: 0.6
+  delta: 1.0e-5
